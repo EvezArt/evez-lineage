@@ -39,9 +39,28 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent
 LINEAGE_DIR = ROOT / "lineage"
-SNAPSHOTS = LINEAGE_DIR / "generations"
+
+
+def _resolve_snapshots() -> Path:
+    """Generation blocks live in one of two places, depending on deployment.
+
+    Live install:  /root/evez-agentnet/lineage/generations/
+    Published repo: <repo>/generations/
+
+    A cold start must work from the published clone, where the canonical
+    lineage/ directory does not exist yet. Resolve at import rather than
+    assuming, or a fresh clone verifies zero generations.
+    """
+    candidates = [ROOT / "generations", LINEAGE_DIR / "generations"]
+    for c in candidates:
+        if c.exists() and any(c.glob("gen-*.json")):
+            return c
+    return candidates[0]
+
+
+SNAPSHOTS = _resolve_snapshots()
 LINEAGE_DIR.mkdir(exist_ok=True)
-SNAPSHOTS.mkdir(exist_ok=True)
+SNAPSHOTS.mkdir(exist_ok=True, parents=True)
 
 SPINE = "http://127.0.0.1:9116"
 ARENA = "http://127.0.0.1:9800"
